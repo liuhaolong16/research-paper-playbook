@@ -22,3 +22,5 @@ _refs/
 *.zip
 *.7z
 *.exe
+
+*.bak
