@@ -330,12 +330,13 @@
 | 项 | 结果 |
 | --- | --- |
 | **许可更正** | 上一轮按「CC BY-NC ⇒ 只吸思想不搬文件」处置；**所有者 2026-10-12 明确本仓库为非商业用途** ⇒ 已**收录上游原件**到 `third_party/academic-research-skills/`（`claim_ref_alignment_audit_agent.md` 45,813 字节 + `LICENSE-CC-BY-NC-4.0.txt` + `CITATION.cff` + `NOTICE.md`）。**边界**：若转商用须移除该目录；**本仓库的机械实现是独立描述，仍为 MIT**。 |
-| **实现的脚本** | `_gate-claim-anchor.cjs`（Node，无依赖，约 260 行）—— 五类阻断（HIGH-1 fabricated / HIGH-2 anchorless / HIGH-3 claim-not-supported / HIGH-4 negative-constraint / HIGH-5 constraint-violation-uncited）+ 两类提示（uncited_assertion / claim_drift）+ 采样不变量 S-INV-1..4 + `NEEDS_READ` 人工清单 |
+| **实现的脚本** | `_gate-claim-anchor.cjs`（Node，无依赖，约 300 行）—— 五类阻断（HIGH-1 fabricated / HIGH-2 anchorless / HIGH-3 claim-not-supported / HIGH-4 negative-constraint / HIGH-5 constraint-violation-uncited）+ 两类提示（uncited_assertion / claim_drift）+ 取回失败三分类 + manifest 三集合（含 `EMITTED_NOT_SUPPORTED`）+ 抽样不变量 S-INV-1..4 + `NEEDS_READ` 人工清单 + `--calibrate` 校准模式 |
 | **输入契约** | `_refs/claim-anchor-format.md`（锚点表与预注册清单的字段、取值含义、能做与不能做） |
-| **负控（本项目纪律：修复前跑它是否会失败）** | `--selftest` **7/7 通过**：1 个干净件必须 0 HIGH（防误报）+ 6 个注入件分别命中 fabricated / anchorless / claim-not-supported×2 / negative-constraint / constraint-violation-uncited（防漏报） |
-| **在本项目真实稿子上的基线** | `13-英文投稿稿-v1.md`：**213 句 · 25 处引用暂不可核验 · 9 处无引用经验句**。**★ 这 25 处不是「伪造引用」，而是「尚无锚点表」** —— 报告里已带 `ANCHOR_REGISTRY_MISSING` 澄清（Round 183 实测补的，防误读） |
+| **负控（本项目纪律：修复前跑它是否会失败）** | `--selftest` **15/15 通过**：1 个干净件必须 0 HIGH（防误报）+ 14 个注入件各命中预期缺陷。**其中 8 组是「在真实稿子上跑出来之后」补的守卫**（每组都有对应夹具，去掉守卫即失败）：否定语境（`We do not claim … first-of-its-kind` 不得判成「主张首创」）· 本研究自证与内部引用（否则每条数据描述都被误判）· 强度词对冲（`almost always` 不是强度断言）· HTML 注释块（工作元数据不得被当成正文）· 会议名+年份（`(NIPS 2017)` 不得当成作者-年份引用）· **区间引用展开**（`[4–8]` 是 5 条，只取端点会把 6/7 误报成「从未引用」）· manifest 改写命中 `match_any` · 以及**「守卫的守卫」**（真正的无引用断言仍必须被抓） |
+| **校准（修正六十六）** | `--calibrate` → **FNR 0.0% / FPR 0.0%**，逐类命中率 100%（样本 **15 < 20** ⇒ 只作**下界**，已如实标注并建议继续补样本） |
+| **在真实稿子上的两轮结果** | ①**无锚点表**：213 句 · 25 处引用暂不可核验 · 9 处无引用经验句。**★ 这 25 处不是「伪造引用」，而是「尚无锚点表」** —— 报告里已带 `ANCHOR_REGISTRY_MISSING` 澄清（防误读）。②**补齐锚点表后**：**176 句 · HIGH 0 · 15 处「引用了但尚未核实支撑」· 4 处本研究自证提示**（P2，不阻断）—— 15 处正是「引了它 ≠ 它支撑了」那一条在真稿上的样子，需人读原文才能消掉 |
 | **登记** | `_gate-registry.cjs` 第 14 项，`args:['--selftest']`、`kind:'gate'`、消费方 `next_round + user` ⇒ **注册表每轮验证「检查器本身还能报警」，真实稿子另跑 `--draft`** |
-| **仍未做** | ①为 NASA 稿补一份锚点表（才能真正跑出语义判定）；②三点映射与图像七查两道候选门（需先在本项目数据上标定阈值） |
+| **仍未做** | ①**为 15 条锚点做语义判定**（读原文后回填 `verdict`，把 15 处「未核支撑」逐条消掉或降级）；②三点映射与图像七查两道候选门（需先在本项目数据上标定阈值） |
 
 > **⚠ 边界（如实记）**：**① 本节的判定全部来自子代理的只读调研 + 主控抽验**（许可与文件存在性由主控复核：ai4s/zLanqing/flonat 的 `LICENSE` 首行为 `MIT License`；Imbad0202 的 `LICENSE` 为 20 KB 的 CC 正文）。**② 三处落地内容本轮均未在本项目数据上实测** ⇒ 一律标注为「规格」，**验收项写的是「要有可复核的记录」，不是「已通过」**。**③ star 数缺失（Imbad0202）与 license 缺失（zotero-mcp / PDFMathTranslate / 全部 Gitee）已如实标注，未用估算补齐。**
 

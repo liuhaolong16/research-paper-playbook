@@ -34,13 +34,18 @@ const W = __dirname;
 // ── 词表：强度词 / 定义句 / 经验触发词 / 对冲词 ──
 const STRENGTH = [
   '全部', '所有', '首次', '唯一', '最早', '最好', '最大', '最高', '必然', '证明', '证实', '显著优于', '充分说明', '毫无疑问',
-  'always', 'all of', 'first', 'only', 'proves', 'proven', 'demonstrates', 'significantly better', 'unprecedented', 'best',
+  // ★ 英文表收窄（Round 183 实测）：bare "only" / "all of" / "best" 在正常句法里大量出现
+  //   （如 "the only intervention left untested"），当强度词会把 0 缺陷的句子判成 HIGH ⇒ 假阳性。
+  //   保留的是「对文献主张做强度断言」的典型词。
+  'first', 'proves', 'proven', 'demonstrates', 'significantly better', 'unprecedented', 'always', 'never',
 ];
 const DEFINITION = ['refers to', 'is defined as', 'we define', 'for the purposes of', '是指', '定义为', '本文定义', '记为'];
-const EMPIRICAL = ['showed', 'shows', 'demonstrated', 'observed', 'proved', 'confirmed', 'improved', 'reduced', 'increased',
-  '表明', '显示', '观察到', '证实', '提升', '下降', '增加', '优于'];
+const EMPIRICAL = ['showed', 'shows', 'demonstrated', 'observed', 'proved', 'confirmed',
+  '表明', '显示', '观察到', '证实', '优于'];
 const HEDGE = ['preprint', 'preliminary', 'unreviewed', '预印本', '尚未同行评议', '初步', '未经同行评议'];
-const RE_CITE_NUM = /\[(\d+(?:\s*[-,]\s*\d+)*)\]/g;                 // [12] / [12,13] / [12-14]
+// ★ 区间引用必须接受 en dash（U+2013）与 em dash：期刊稿里 [4–8] 是标准写法，
+//   只认 ASCII "-" 会让这些引用被判成「从未引用」（Round 183 实测：4 条锚点假漂移）。
+const RE_CITE_NUM = /\[(\d+(?:\s*[-,–—]\s*\d+)*)\]/g;                 // [12] / [12,13] / [12-14] / [4–8]
 const RE_REF_MARKER = /<!--\s*ref:[^\s>][^>]*?-->|\{\{\s*ref:[^}]+\}\}/g;  // <!--ref:slug--> / {{ref:slug}}
 const RE_AUTHOR_YEAR = /\(([A-Z][A-Za-z'\-]+)\s*(?:et al\.?|&[^)]*)?,?\s*(19|20)\d{2}[a-z]?\)/g;
 const RE_QUANT = /(?<![\w.])(\d+(?:\.\d+)?\s*%|\d+(?:\.\d+)?\s*(?:倍|times|x))|(\b(?:most|several|majority|two-thirds|half)\b)|(大多数|多数|过半|若干|显著)/g;
@@ -54,6 +59,14 @@ const PMID_RE = /^\d{4,9}$/;
 const URL_RE = /^https?:\/\/\S+$/;
 
 function splitSentences(md) {
+  // ★ 实测补的两条边界（Round 183）：
+  //   ① 去掉 HTML 注释块：工作稿常在文件头放「工作元数据」，里面含 "Most/several" 等词，
+  //      不剥离就会产生假阳性（实测 L8 命中）。
+  //   ② 到 `## References` 为止：参考文献表是**声明出处**的地方，不是提出主张的地方；
+  //      继续扫会把 `(NIPS 2017)` 这类「会议名+年份」当成作者-年份引用（实测 HIGH-1 假阳性）。
+  md = md.replace(/<!--[\s\S]*?-->/g, '');
+  const refAt = md.search(/^##+\s*References\b/im);
+  if (refAt > 0) md = md.slice(0, refAt);
   const out = [];
   const lines = md.split(/\r?\n/);
   for (let li = 0; li < lines.length; li++) {
@@ -70,11 +83,22 @@ function splitSentences(md) {
 }
 
 function citationKeys(sentence) {
+  const VENUE = /^(nips|neurips|icml|iclr|kdd|ieee|acm|arxiv|ijcnn|detc|asme|springer|elsevier|wiley|mdpi|plos)$/i;
   const keys = [];
-  const nums = [...sentence.matchAll(RE_CITE_NUM)].flatMap(m => m[1].split(/[,\-]/).map(s => s.trim()).filter(Boolean));
+  // ★ 区间必须展开（Round 183 实测补）：`[4–8]` 是 5 条引用，不是 2 条 —— 只取端点会把
+  //   6/7 号锚点误报成「从未引用」（实测 4 条假漂移）。
+  const nums = [];
+  for (const m of sentence.matchAll(RE_CITE_NUM)) {
+    for (const seg of m[1].split(',')) {
+      const t = seg.trim();
+      const rng = t.match(/^(\d+)\s*[–—-]\s*(\d+)$/);
+      if (rng) { const a = +rng[1], b = +rng[2]; if (b >= a && b - a <= 50) for (let k = a; k <= b; k++) nums.push(String(k)); }
+      else if (/^\d+$/.test(t)) nums.push(t);
+    }
+  }
   nums.forEach(n => keys.push({ kind: 'numeric', key: n }));
   [...sentence.matchAll(RE_REF_MARKER)].forEach(m => keys.push({ kind: 'slug', key: m[0].replace(/<!--\s*ref:|\{\{\s*ref:|-->|\}\}/g, '').trim() }));
-  [...sentence.matchAll(RE_AUTHOR_YEAR)].forEach(m => keys.push({ kind: 'author-year', key: (m[1] + m[2]).toLowerCase() }));
+  [...sentence.matchAll(RE_AUTHOR_YEAR)].forEach(m => { if (!VENUE.test(m[1])) keys.push({ kind: 'author-year', key: (m[1] + m[2]).toLowerCase() }); });
   return keys;
 }
 
@@ -139,7 +163,20 @@ function audit(draft, anchorsDoc, manifestDoc, opts = {}) {
       const st = (a.status || 'published').toLowerCase();
       if ((st === 'retracted' || st === 'preprint') && !HEDGE.some(h => s.text.toLowerCase().includes(h)))
         HIGH.push({ id: 'HIGH-4', stage: 'negative-constraint-violation', line: s.line, key: c.key, why: '引用状态为 ' + st + '，但句子按既定事实表述（未出现预印本/初步等对冲词）', p0: true, text: s.text });
-      const strong = STRENGTH.filter(w => s.text.toLowerCase().includes(w.toLowerCase()));
+      // ★ 对冲守卫（Round 183 实测补）：almost/nearly/virtually/generally/typically + always/never/all
+      //   是**量化让步**而非强度断言（例："almost always obtained at a single temperature [5–11]"），
+      //   把它们算成强度词会把经过审慎限定的综述句判成缺陷。
+      const HEDGE_PRE = /(almost|nearly|virtually|generally|typically|roughly|about|几乎|大致|通常|一般)\s*$/i;
+      const strong = STRENGTH.filter(w => {
+        const low = s.text.toLowerCase(), wl = w.toLowerCase();
+        let idx = low.indexOf(wl);
+        while (idx !== -1) {
+          const before = s.text.slice(0, idx);
+          if (!HEDGE_PRE.test(before)) return true;      // 找到一处未被对冲的用法
+          idx = low.indexOf(wl, idx + 1);
+        }
+        return false;
+      });
       const supported = a.scope && a.scope.supports_strength === true;
       if (strong.length && !supported) HIGH.push({ id: 'HIGH-3', stage: 'claim-not-supported', line: s.line, key: c.key, why: '句含强度词 [' + strong.join('/') + '] 但锚点未声明 supports_strength', p0: false, text: s.text });
       if ((a.verdict || '').toUpperCase() === 'PARTIAL') {
@@ -166,13 +203,26 @@ function audit(draft, anchorsDoc, manifestDoc, opts = {}) {
     const isUncited = cites.length === 0;
     if (isUncited) {
       const low = s.text.toLowerCase();
+      // ★ 否定语境守卫（Round 183 实测补）：禁用表述检测对**否定语境**是盲的 ——
+      //   §1.4「We do not claim … first-of-its-kind status」会被判成「主张首创」（假阳性）。
+      //   ⇒ 出现显式免责/否认措辞的句子，不参与禁用表述判定（免责本身恰恰是我们要的）。
+      const DISCLAIM = /\b(do(es)? not claim|not claimed|we do not|no claim|is not a claim|neither\b.{0,40}\bnor|rather than (claim|assert)|not (a )?novelty|there is no|does not (prove|establish|imply))\b/i;
+      const disclaimed = DISCLAIM.test(s.text);
       for (const nc of constraints) {
         if (!isStr(nc.pattern)) continue;
+        if (disclaimed) continue;
         let re; try { re = new RegExp(nc.pattern, 'i'); } catch { re = null; }
         if (re && re.test(s.text))
           HIGH.push({ id: 'HIGH-5', stage: 'constraint-violation-uncited', line: s.line, key: nc.constraint_id || '-', why: '无引用句命中禁用表述 ' + (nc.constraint_id || '') + '：' + (nc.note || nc.pattern), p0: !!(nc.blocking !== false), text: s.text });
       }
+      if (disclaimed) { INFO.push({ line: s.line, why: '显式免责句（否定语境）—— 已按免责措辞豁免禁用表述判定' }); continue; }
       if (expBacked.has(s.text.trim())) { INFO.push({ line: s.line, why: '实验自证句（manifest 带 planned_experiment_ids）—— 按来源 #260 豁免，不判无引用' }); continue; }
+      // ★ 本研究自证 / 内部交叉引用 / 数据物证守卫（Round 183 实测补，规则可枚举，不是白名单）：
+      //   ① 第一/第二人称或本研究指称；② 内部指针（Section/Table/Figure/Supplementary/式号）；
+      //   ③ 数据物证（数据集名、文件列名、逐电池/逐循环、measured）。
+      //   理由：这三类句子不是「未引用的文献断言」，把它们判成缺陷会让门产生大量噪声（实测 26/26 噪声）。
+      const PRIMARY = /\b(we|our|us|this study|this work|this paper|the raw|raw records?|filtered_v2|\.mat|csv|ambient_temperature|the dataset|the analysis set|the cells|per-cell|per-cycle|measured)\b|(Section|Table|Figure|Supplementary|Eq\.?)\s*\d|\b§\s*\d/i;
+      if (PRIMARY.test(s.text)) { INFO.push({ line: s.line, why: '本研究自证 / 内部交叉引用 / 数据物证句 —— 不判为无引用断言' }); continue; }
       const d = detectUncited(s.text);
       if (d.fire) LOW.push({ id: 'LOW-1', stage: 'uncited_assertion', line: s.line, tokens: d.tokens, text: s.text });
     }
@@ -187,13 +237,21 @@ function audit(draft, anchorsDoc, manifestDoc, opts = {}) {
   }
   // —— manifest 三集合差（Intended / Emitted / 有锚点） ——
   // —— manifest 三集合差（Intended / Emitted / Supported）——（采纳自上游 D6：第三集合不可省） ——
+  // ★ 匹配方式：优先逐字匹配 claim_text；若无逐字命中，再接受 manifest 自带的 match_any 子串
+  //   （预注册清单里的主张通常是**改写**而非原句，只靠逐字匹配会把它们全报成漂移 —— Round 183 实测）。
+  const intendedHit = mc => {
+    const t = (mc.claim_text || '').trim();
+    if (t && sentences.some(s => (s.text || '').trim() === t)) return true;
+    const pats = Array.isArray(mc.match_any) ? mc.match_any : [];
+    return pats.some(p => isStr(p) && draft.includes(p));
+  };
   const supported = new Set(anchors.filter(a => String(a.verdict || '').toUpperCase() === 'SUPPORTED').map(a => String(a.citation_key || '').toLowerCase()));
   const emittedKeyed = new Set(anchors.filter(a => [a.citation_key, a.marker, a.slug].filter(isStr).map(x => String(x).replace(/[\[\]]/g, '').toLowerCase()).some(x => draftedKeys.has(x))).map(a => String(a.citation_key || '').toLowerCase()));
   for (const k of emittedKeyed) if (k && !supported.has(k))
     LOW.push({ id: 'LOW-2', stage: 'claim_drift', key: k, why: '正文引用了它，但它并不在 SUPPORTED 集合里（EMITTED_NOT_SUPPORTED）—— 支撑性不能靠「引了」来推定', text: '' });
   for (const mc of manifestClaims) {
     const cid = mc.claim_id || mc.claim_text;
-    if (!emitted.has(cid) && !sentences.some(s => (s.text || '').trim() === (mc.claim_text || '').trim()))
+    if (!emitted.has(cid) && !intendedHit(mc))
       LOW.push({ id: 'LOW-2', stage: 'claim_drift', key: cid, why: 'manifest 预注册但正文未出现（INTENDED_NOT_EMITTED）', text: mc.claim_text || '' });
   }
   // —— 采样不变量（S-INV-1..4） ——
@@ -264,6 +322,45 @@ function fixtures() {
       draft: 'Most samples showed a 2.5 times faster fade.',
       anchors: { anchors: [] }, manifest: { claims: [], negative_constraints: [] }, expect: { high: 0, lowMin: 1 },
     },
+    // ── Round 183 实测补的三组「守卫的守卫」（去掉对应守卫即失败） ──
+    { // ① 否定语境：显式免责句命中禁用词，**不得**判 HIGH-5
+      draft: 'We do not claim cross-temperature generalization, first-of-its-kind status, or novelty of the model class.',
+      anchors: { anchors: [] },
+      manifest: { claims: [], negative_constraints: [{ constraint_id: 'NC-no-first', pattern: 'first.of.its.kind', blocking: true }] },
+      expect: { high: 0, lowMax: 0 },
+    },
+    { // ② 本研究自证 / 内部交叉引用：**不得**判 LOW-1（否则每条数据描述都被误判）
+      draft: 'Inspection of the raw curves showed that some cells contain pulsed high-rate segments, as listed in Table 1.',
+      anchors: { anchors: [] }, manifest: { claims: [], negative_constraints: [] }, expect: { high: 0, lowMax: 0 },
+    },
+    { // ③ 守卫的守卫：真正的无引用文献断言仍必须被抓（证明上面两条豁免没有把检测器关掉）
+      draft: 'Most reported models are trained and tested at a single ambient temperature.',
+      anchors: { anchors: [] }, manifest: { claims: [], negative_constraints: [] }, expect: { high: 0, lowMin: 1 },
+    },
+    { // ④ 强度词收窄：cited 句里的 "the only … left untested" 不得再被当成强度断言
+      draft: 'The only intervention direction left untested is cross-domain adaptation [12].',
+      anchors: { anchors: [{ citation_key: 'ref-12', marker: '12', slug: 'ref-12', identifier: { doi: '10.1000/xyz12' }, locator: { kind: 'reference-list', value: '[12]' }, scope: { supports_strength: false }, evidence_layer: 'author_statement', verdict: 'PENDING' }] },
+      manifest: { claims: [], negative_constraints: [] }, expect: { high: 0 },
+    },
+    { // ⑤ HTML 注释块必须被剥离（工作元数据里有 "Most…" 也不得触发 LOW-1）
+      draft: '<!-- 工作元数据：Most samples showed a 2.5 times faster fade. -->\nWe measured 26 cells.',
+      anchors: { anchors: [] }, manifest: { claims: [], negative_constraints: [] }, expect: { high: 0, lowMax: 0 },
+    },
+    { // ⑥ 「会议名+年份」不得当成作者-年份引用（References 里 (NIPS 2017) 曾造成 HIGH-1 假阳性）
+      draft: 'A Unified Approach to Interpreting Model Predictions. Advances in Neural Information Processing Systems 30 (NIPS 2017).',
+      anchors: { anchors: [] }, manifest: { claims: [], negative_constraints: [] }, expect: { high: 0 },
+    },
+    { // ⑦ 区间引用必须展开：`[4–8]` 覆盖 5 条锚点，否则 6/7 会被误报成「从未引用」
+      draft: 'Early-cycle SOH estimation has become an active direction [4–8].',
+      anchors: { anchors: [4, 5, 6, 7, 8].map(n => ({ citation_key: 'ref-' + n, marker: String(n), identifier: { doi: '10.1000/x' + n }, locator: { kind: 'reference-list', value: '[' + n + ']' }, scope: { supports_strength: false }, evidence_layer: 'author_statement', verdict: 'PENDING' })) },
+      manifest: { claims: [], negative_constraints: [] }, expect: { high: 0, lowMax: 5 },   // 5 = 每条「引了但未核支撑」各一条 EMITTED_NOT_SUPPORTED
+    },
+    { // ⑧ manifest 改写主张可用 match_any 命中（只靠逐字匹配会把预注册清单全报成漂移）
+      draft: 'Under protocol B the minimum cross-temperature R² is −8.002.',
+      anchors: { anchors: [] },
+      manifest: { claims: [{ claim_id: 'RQ1', claim_text: '（改写）跨温迁移崩塌', match_any: ['cross-temperature R² is −8.002'] }], negative_constraints: [] },
+      expect: { high: 0, lowMax: 0 },
+    },
   ];
   return cases;
 }
@@ -276,7 +373,7 @@ function selftest() {
     const r = audit(c.draft, c.anchors, c.manifest, {});
     const okHigh = r.HIGH.length === c.expect.high;
     const okStage = !c.expect.stage || r.HIGH.some(h => h.stage === c.expect.stage);
-    const okLow = c.expect.lowMin == null || r.LOW.length >= c.expect.lowMin;
+    const okLow = (c.expect.lowMin == null || r.LOW.length >= c.expect.lowMin) && (c.expect.lowMax == null || r.LOW.length <= c.expect.lowMax);
     const pass = okHigh && okStage && okLow;
     if (!pass) bad++;
     console.log('  ' + (pass ? '✅' : '❌') + ' case ' + (i + 1) + ' 期望 HIGH=' + c.expect.high + (c.expect.stage ? '/' + c.expect.stage : '') +
