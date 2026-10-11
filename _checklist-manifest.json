@@ -1,6 +1,6 @@
 {
-  "builtAt": "2026-10-11T17:34:41.431Z",
-  "total": 130,
+  "builtAt": "2026-10-11T18:09:23.098Z",
+  "total": 138,
   "dims": [
     {
       "key": "01-topic-selection",
@@ -17,8 +17,8 @@
     {
       "key": "03-structure",
       "file": "research/03-structure.md",
-      "n": 16,
-      "hash": "c659170899187ede"
+      "n": 17,
+      "hash": "6f3b31905862bd96"
     },
     {
       "key": "04-databases",
@@ -29,8 +29,8 @@
     {
       "key": "05-references",
       "file": "research/05-references.md",
-      "n": 15,
-      "hash": "57fd9af31864d85f"
+      "n": 18,
+      "hash": "eb8469d6af3d2d19"
     },
     {
       "key": "06-content",
@@ -59,14 +59,14 @@
     {
       "key": "10-statistics",
       "file": "research/10-statistics.md",
-      "n": 9,
-      "hash": "761cfcb7e137418e"
+      "n": 11,
+      "hash": "747916404f7fb5c8"
     },
     {
       "key": "11-image-integrity",
       "file": "research/11-image-integrity.md",
-      "n": 6,
-      "hash": "962fdb700c6bd085"
+      "n": 8,
+      "hash": "7baee622df3fe87f"
     }
   ]
 }
