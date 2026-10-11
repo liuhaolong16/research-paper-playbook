@@ -14,15 +14,15 @@ This directory includes material copied verbatim from a third-party project.
 > It is **not** authored by this repository's owner and is **not** covered by this
 > repository's MIT license.
 
-## NonCommercial scope
+## NonCommercial scope (precise version)
 
-The file is included **for non-commercial personal study and research use only**.
-If this repository is ever used commercially, this directory MUST be removed and none of
-the upstream text may be redistributed.
+Only the **verbatim file in this directory** is under CC BY-NC 4.0. That restriction does not extend to:
 
-By contrast, `_gate-claim-anchor.cjs` (the mechanical checker derived from the mechanism
-described in that file) is an independent description written by this repository's owner
-and remains under this repository's MIT license.
+- the **mechanism, ideas, criteria and terminology** described in it (ideas are not protected by copyright), nor
+- **this repository's own implementation** (`_gate-claim-anchor.cjs`, `_refs/claim-anchor-format.md`, and the §5.18 criteria text), which was written independently and is licensed MIT — usable in any scenario, commercial included.
+
+So if this repository is ever used commercially, the single required action is to **delete the verbatim upstream file from this directory** (and its `LICENSE-CC-BY-NC-4.0.txt`). Nothing else has to change.
+
 
 ## Consumer
 

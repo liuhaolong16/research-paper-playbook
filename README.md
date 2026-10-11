@@ -83,11 +83,12 @@ node _build-full.cjs
 
 ```bash
 node _gate-claim-anchor.cjs --selftest          # 门模式：7 组夹具（1 干净件 + 6 注入件）
+node _gate-claim-anchor.cjs --calibrate         # 校准：逐类命中率 + FNR/FPR + 样本量声明
 node _gate-claim-anchor.cjs --draft <稿子.md> --anchors <锚点表.json> [--manifest <预注册.json>] [--report <输出.json>]
 ```
 
 **五类阻断**：`fabricated-reference`（标识符不可解析）· `anchorless`（引用无 locator）· `claim-not-supported`（强度词未被 scope 覆盖 / 证据层级越权 / PARTIAL 无分解）· `negative-constraint-violation`（撤稿·预印本当既定事实）· `constraint-violation-uncited`（无引用句命中禁用表述）。
-**两类提示**：`uncited_assertion` · `claim_drift`。
+**两类提示**：`uncited_assertion` · `claim_drift`（含 `EMITTED_NOT_SUPPORTED`：**「引了它」不等于「它支撑了」**）。
 **它不做的事**：不判「原文是否真这么说」——那仍需人读原文；机械全过的条目会列进 `NEEDS_READ`，不冒充判定。格式与边界见 `_refs/claim-anchor-format.md`。
 
 ## 使用方式（三种）

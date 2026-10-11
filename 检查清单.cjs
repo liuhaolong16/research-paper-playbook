@@ -3,7 +3,7 @@
  * 科研论文写作方案 · 可执行检查清单
  * 用法: node 检查清单.cjs <论文文件.pdf|.html|.txt> [--lang en|zh]
  *
- * 实现来源: E:\DeepSeek\research-paper-playbook\playbook\99-methodology.md 的 64 条修正 + 统合节
+ * 实现来源: E:\DeepSeek\research-paper-playbook\playbook\99-methodology.md 的 67 条修正 + 统合节
  * 每条检查都标注: 判据 / 适用域 / 可检出率 / 依据的修正号
  * ★ 本工具只做「机械可查」的部分；需要判断的项标 [人工]
  */

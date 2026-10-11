@@ -149,6 +149,14 @@ function audit(draft, anchorsDoc, manifestDoc, opts = {}) {
       }
       if (['UNSUPPORTED', 'AMBIGUOUS', 'RETRIEVAL_FAILED'].includes((a.verdict || '').toUpperCase()))
         HIGH.push({ id: 'HIGH-3', stage: 'claim-not-supported', line: s.line, key: c.key, why: '锚点判定 ' + a.verdict + ' —— 该引用不能作为已支撑使用', p0: false, text: s.text });
+      // —— 取回失败的**不可合并**分类（采纳自上游 INV-10 / INV-14）：永久不可得 vs 暂时不可得 ——
+      const rm = String(a.retrieval_method || '').toLowerCase();
+      if (rm === 'not_found')
+        HIGH.push({ id: 'HIGH-3', stage: 'retrieval_existence', line: s.line, key: c.key, why: '检索层报 not_found（来源不存在或题录有误）—— 不得当作「已核」', p0: false, text: s.text });
+      else if (rm === 'failed' || rm === 'paywall')
+        HIGH.push({ id: 'HIGH-3', stage: 'retrieval_inaccessible', line: s.line, key: c.key, why: '永久不可得（付费墙/无权限）：**与暂时失败不可合并**，恢复动作是换来源或改走人工', p0: false, text: s.text });
+      else if (rm === 'audit_tool_failure' || rm === 'timeout' || rm === 'transient')
+        LOW.push({ id: 'LOW-1', stage: 'retrieval_transient', line: s.line, key: c.key, why: '暂时不可得（超时/5xx）：**不是稿件缺陷**，重试即可，不得计入缺陷率（来源 INV-14）', text: s.text });
       if (st === 'published' && (a.verdict || '').toUpperCase() === 'SUPPORTED') NEEDS_READ.push({ line: s.line, key: c.key, why: '机械项全过，但「原文是否真这么说」仍需人读：' + (a.locator && a.locator.quote ? a.locator.quote.slice(0, 60) : '（锚点未附原文摘录）') });
       const mc = manifestClaims.find(x => (x.claim_text || '').trim() === s.text.trim());
       if (mc) emitted.add(mc.claim_id || mc.claim_text);
@@ -178,6 +186,11 @@ function audit(draft, anchorsDoc, manifestDoc, opts = {}) {
       LOW.push({ id: 'LOW-2', stage: 'claim_drift', key: a.citation_key, why: '锚点表里有条目但正文未引用（INTENDED_NOT_EMITTED）', text: '' });
   }
   // —— manifest 三集合差（Intended / Emitted / 有锚点） ——
+  // —— manifest 三集合差（Intended / Emitted / Supported）——（采纳自上游 D6：第三集合不可省） ——
+  const supported = new Set(anchors.filter(a => String(a.verdict || '').toUpperCase() === 'SUPPORTED').map(a => String(a.citation_key || '').toLowerCase()));
+  const emittedKeyed = new Set(anchors.filter(a => [a.citation_key, a.marker, a.slug].filter(isStr).map(x => String(x).replace(/[\[\]]/g, '').toLowerCase()).some(x => draftedKeys.has(x))).map(a => String(a.citation_key || '').toLowerCase()));
+  for (const k of emittedKeyed) if (k && !supported.has(k))
+    LOW.push({ id: 'LOW-2', stage: 'claim_drift', key: k, why: '正文引用了它，但它并不在 SUPPORTED 集合里（EMITTED_NOT_SUPPORTED）—— 支撑性不能靠「引了」来推定', text: '' });
   for (const mc of manifestClaims) {
     const cid = mc.claim_id || mc.claim_text;
     if (!emitted.has(cid) && !sentences.some(s => (s.text || '').trim() === (mc.claim_text || '').trim()))
@@ -191,6 +204,8 @@ function audit(draft, anchorsDoc, manifestDoc, opts = {}) {
     for (let b = 0; b < k; b++) idx.push(Math.floor(b * total / k));
     const sorted = [...idx].sort((x, y) => x - y);
     INFO.push({ sampling_strategy: 'stratified_buckets_v1', audited_count: idx.length, total_citation_count: total, audited_indices: idx,
+      sampled: idx.length < total,
+      declaration: idx.length < total ? ('本次为抽样审计（' + idx.length + '/' + total + '），**不是全量审计** —— 结论只对它覆盖的那部分负责（采纳自上游：抽样必须显式声明，否则「没查」与「查过没问题」同形）') : '全量审计',
       s_inv_1: idx.length === idx.length, s_inv_2: idx.length <= maxClaims && idx.length <= total, s_inv_3: idx.length < total, s_inv_4: JSON.stringify(idx) === JSON.stringify(sorted) });
   }
 
@@ -210,7 +225,7 @@ function audit(draft, anchorsDoc, manifestDoc, opts = {}) {
 }
 
 // ── selftest：6 组夹具（1 干净 + 5 注入），每组必须落回预期判定 ──
-function selftest() {
+function fixtures() {
   const clean = {
     draft: 'Several studies report a capacity fade near 4 C [1]. 我们观察到 43 ℃ 档位出现明显衰退 [1].',
     anchors: { anchors: [{ citation_key: 'ref-1', marker: '1', slug: 'ref-1', identifier: { doi: '10.1000/xyz1' }, locator: { kind: 'section', value: 'Results §3', quote: 'fade near 4 C' }, scope: { supports_strength: true }, evidence_layer: 'author_statement', status: 'published', verdict: 'SUPPORTED' }] },
@@ -250,6 +265,11 @@ function selftest() {
       anchors: { anchors: [] }, manifest: { claims: [], negative_constraints: [] }, expect: { high: 0, lowMin: 1 },
     },
   ];
+  return cases;
+}
+
+function selftest() {
+  const cases = fixtures();
   let bad = 0;
   console.log('════ _gate-claim-anchor --selftest ════');
   cases.forEach((c, i) => {
@@ -268,8 +288,40 @@ function selftest() {
   process.exit(bad ? 2 : 0);
 }
 
+// ── calibrate：把「门准不准」变成可算的数（校准合同采纳自上游：FNR<0.15 / FPR<0.10 / 逐类报告） ──
+function calibrate() {
+  const cases = fixtures();
+  const perClass = {};
+  let injected = 0, detected = 0, clean = 0, falseAlarm = 0;
+  cases.forEach(c => {
+    const r = audit(c.draft, c.anchors, c.manifest, {});
+    if (c.expect.high === 0) {
+      clean++; const ok = r.HIGH.length === 0; if (!ok) falseAlarm++;
+      const k = '负控·干净件'; perClass[k] = perClass[k] || { n: 0, hit: 0 }; perClass[k].n++; if (ok) perClass[k].hit++;
+    } else {
+      injected++; const ok = !c.expect.stage || r.HIGH.some(h => h.stage === c.expect.stage); if (ok) detected++;
+      const k = c.expect.stage || '(未标注类别)'; perClass[k] = perClass[k] || { n: 0, hit: 0 }; perClass[k].n++; if (ok) perClass[k].hit++;
+    }
+  });
+  const fnr = injected ? (injected - detected) / injected : 0;
+  const fpr = clean ? falseAlarm / clean : 0;
+  console.log('════ _gate-claim-anchor --calibrate（校准合同）════');
+  console.log('  样本：注入件 ' + injected + ' · 干净件（负控） ' + clean);
+  console.log('');
+  console.log('  | 类别 | 样本 | 命中 | 命中率 |');
+  console.log('  | --- | --- | --- | --- |');
+  for (const [k, v] of Object.entries(perClass)) console.log('  | ' + k + ' | ' + v.n + ' | ' + v.hit + ' | ' + (v.n ? Math.round(v.hit / v.n * 100) + '%' : '-') + ' |');
+  console.log('');
+  console.log('  FNR（漏报率）= ' + (fnr * 100).toFixed(1) + '%  阈值 <15% → ' + (fnr < 0.15 ? '✅' : '❌'));
+  console.log('  FPR（误报率）= ' + (fpr * 100).toFixed(1) + '%  阈值 <10% → ' + (fpr < 0.10 ? '✅' : '❌'));
+  if (cases.length < 20) console.log('  ⚠ 样本量 ' + cases.length + ' < 20：FPR 分辨率低（一个误报就是 100%），此数只能当作下界，须持续补样本');
+  console.log('  ⇒ ' + ((fnr < 0.15 && fpr < 0.10) ? '满足校准合同（可回填台账；样本仍偏少）' : '★ 不满足校准合同：不得作为硬门，须补样本或降级为 advisory'));
+  process.exit((fnr < 0.15 && fpr < 0.10) ? 0 : 1);
+}
+
 // ── CLI ──
 function arg(name, dflt) { const i = process.argv.indexOf(name); return i > -1 ? process.argv[i + 1] : dflt; }
+if (process.argv.includes('--calibrate')) { calibrate(); }
 if (process.argv.includes('--selftest') || process.argv.length === 2) { selftest(); }
 if (process.argv.includes('--help') || process.argv.includes('-h')) {
   console.log('用法: node _gate-claim-anchor.cjs --selftest | --draft <md> [--anchors <json>] [--manifest <json>] [--max-claims N] [--report <path>] [--json]');
