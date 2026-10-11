@@ -37,6 +37,7 @@ const PERMANENT = {
   '_verify-pos.cjs':        '验收项正向形式检查（±2 行窗口）',
   '_digest-revtest.cjs':    '断言集内容摘要的反向测试（改正文不改标题必须被抓）',
   '_baseline-control.cjs':  '对拍基准具名 + 三类负控（采纳表最后 2 项的落地）',
+  '_gate-claim-anchor.cjs': '第 14 道门：引用与主张对齐（五类阻断 + 两类提示；注册表跑 --selftest，真实稿子另跑 --draft）',
   '_sections.cjs':          '节编号检查',
   '_extract-quality.cjs':   '提取质量五指标',
   '_contract-check.cjs':   '契约检查：参考文献 APA 格式 + 强断言证据在场性（D2）',

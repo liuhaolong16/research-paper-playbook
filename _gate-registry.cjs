@@ -44,6 +44,7 @@ const GATES = [
   { id: '_build-checklist', args: ['--check'], kind: 'gate', consumer: ['next_round'], written_to: '轮次回复的「校验」段（跨维总检查表是否与 11 维源文件同步）' },
   { id: '_src-snapshot', args: ['--stale'], kind: 'gate', consumer: ['next_round'], written_to: '轮次回复的「校验」段（最新源文件快照是否完整）' },
   { id: '_baseline-control',  args: [],                    kind: 'gate',     consumer: ['next_round'],          written_to: '轮次回复的「校验」段（对拍基准 + 三类负控）' },
+  { id: '_gate-claim-anchor', args: ['--selftest'],        kind: 'gate',     consumer: ['next_round','user'],   written_to: '轮次回复的「校验」段（第 14 道门：引用与主张对齐 —— 注册表每轮跑它的自检；真实稿子另跑 --draft）' },
   { id: '_extract-quality',   args: ['_refs/p19-springer-stat-reporting.pdf'], kind: 'advisory', consumer: [], written_to: '（仅方法验证，不每轮跑）' },
   { id: '_contract-check.cjs', args: [], kind: 'advisory', consumer: [], written_to: '（契约检查：参考文献 APA 格式 + 强断言证据在场性；只在有真实论文草稿时跑 —— 对方案自身文档跑会因元讨论产生假阳性）' },
 ];

@@ -279,6 +279,68 @@
 
 ---
 
+### 十、★★★★ 开源学术资产调研与整合（Round 182 · **GitHub + Gitee 双平台**）
+
+> **★ 任务来源**：用户 2026-10-12 要求「把它做成技能/插件 → 上传到 Gitee 与 GitHub → **顺便在上面找找有没有相关的技能或插件，下载下来一并整合**」。
+> **⇒ 调研范围与方法**：GitHub 用 repository/code 搜索（6 组关键词 × `academic writing skill` / `paper writing agent` / `literature review mcp` / `citation checker` / `zotero mcp` / `academic-research-skills`）；Gitee 用开源仓库搜索（`论文 写作` / `学术 写作` / `文献 综述` / `科研 工具`）。**⇒ 完整报告（含检索记录、逐仓库详评、未验证项）**：`D:\deep seek工作区1\run\v1.15-open-source\报告-调研.md`（32 KB）；**下载的 4 个仓库**在同目录 `downloads\`。
+
+**⇒ 候选总表（star/license/更新时间为 API 原文；`未找到` 即未取到，不估算）**
+
+| 仓库 | star | license | 最后更新 | 形态 | 判定 |
+| --- | --- | --- | --- | --- | --- |
+| `Imbad0202/academic-research-skills` | 未找到（6 组检索未返回） | **CC BY-NC 4.0（禁商用）** | commit `d1e51716` | skill + commands + hooks + 子代理 | **可整合：只吸思想** |
+| `ai4s-research/ai4s-skills` | 237 | **MIT** | 2026-10-10 | skill×7 + **确定性取证脚本** | **可整合：方法+脚本清单** |
+| `zLanqing/codex-claude-academic-skills` | 4757 | **MIT** | 2026-10-11 | skill×3（中文优先，含 OOXML 成品件工具） | **可整合：成品件机器检查** |
+| `flonat/flonat-research` | 146 | **MIT** | 2026-10-08 | skill×87 + agent×15 | **可整合：三点映射 + 审计只读边界** |
+| `lingzhi227/agent-research-skills` | 393 | **未找到（根目录确无 LICENSE）** | 2026-10-11 | skill×30 + install.sh | 可参考（`backward-traceability` 与 §十一 反向大纲可对拍）；**无许可 ⇒ 不搬** |
+| `LeonChaoX/qinyan-academic-skills` | 944 | MIT | 2026-10-11 | skill×187 | 可参考（「意义保持 + 反过度断言」双约束） |
+| `cookjohn/cnki-skills` | 984 | MIT | 2026-10-11 | skill×10（经 Chrome DevTools MCP） | 可参考（知网检索自动化路径） |
+| `54yyyu/zotero-mcp` | 5324 | 未找到 | 2026-10-11 | MCP server | **待验**（红旗五查未完成） |
+| `PDFMathTranslate` | 37491 | 未找到 | 2026-10-11 | CLI/GUI/MCP/Docker | **待验**（同上） |
+| `ahmedEid1/thoth` | 2 | MIT | 2026-10-07 | MCP + LangGraph（per-claim cite_check） | 可参考（三态判定 + 公开 eval 披露纪律；star 过低不集成） |
+| **Gitee 侧全部** | **最高 1** | 未找到 | 2026-04~09 | 0–1 star 单次推送仓库 | **不采纳**（信号质量不足，且无一完成五查） |
+
+**⇒ ★ 红旗五查（10 个顶层候选，全部逐项扫过）**：① 二进制/`.exe`/`.dll`/`.msi` —— **0 命中**（仅 2 处 `.ps1`）；② 根证书（`.pem/.crt/.cer/.pfx/.p12`）—— **0 命中**；③ 系统代理/PAC（`AutoConfigURL`/`ProxyEnable`）—— **0 命中**；④ `ExecutionPolicy Bypass` / `curl|bash` / `EncodedCommand` / 混淆 —— **0 命中**（`lingzhi227` 全仓 `curl` 仅 1 处 = `localhost:3000/health`）；⑤ 可疑依赖或商业 key —— 无可疑项。**⇒ 本次候选不触发红旗拒绝**；**⚠ 但 zotero-mcp / PDFMathTranslate / 全部 Gitee 候选的五查未完成**，**不得当作「已排除」**。
+
+**⇒ ★ 本轮实际落地（整合，不是登记）**
+
+| # | 来源（许可） | 机制 | 落点 | 新增验收项 |
+| --- | --- | --- | --- | --- |
+| **1** | Imbad0202（CC BY-NC ⇒ **只吸思想**） | **claim 锚点三层坐标 + 五类阻断项**（claim-not-supported / fabricated-reference / anchorless / negative-constraint-violation / constraint-violation-uncited） | `research/05-references.md` **§5.18** | **3 条** |
+| **2** | ai4s-skills（MIT） | **确定性取证七查**（image_dup / image_dup_orb / panel_split / channel_check / magnitude_consistency / decimal_match / xlsx_aggregate_consistency） | `research/11-image-integrity.md` **§11.13** | **2 条** |
+| **3** | flonat-research（MIT） | **「数字↔源码↔输出」三点映射** + **审计者只读边界** | `research/10-statistics.md` **§10.14** | **2 条** |
+| **4** | zLanqing（MIT） | **OOXML 级成品件检查**（文字溢出 / autofit 缩放 / shape 越界） | `research/03-structure.md` **§3.13 七** | **1 条** |
+
+**⇒ ★ 三条不采纳（附理由，避免下次重复评估）**
+
+| 项 | 处置 | 理由 |
+| --- | --- | --- |
+| 直接搬 Imbad0202 的文件/提示词 | **不采纳** | **CC BY-NC 4.0 禁商用**；且其自述 calibration 尚用替身裁判 ⇒ **搬文件既有许可风险，又换不来可信有效性** |
+| lingzhi227 的 30 个原子 skill | **不采纳文件** | **根目录无 LICENSE** ⇒ 无授权基础；其 `backward-traceability` 与我方 §十一 对拍即可 |
+| Gitee 侧仓库 | **不采纳** | **最高 1 star、多数 0 star 单次推送**，且 Gitee 无对等 tree/code-search API ⇒ **无法完成红旗五查** |
+
+**⇒ ⏳ 本轮未做、已明确记账的**：
+| # | 项 | 规格 |
+| --- | --- | --- |
+| **1** | ~~把三处新机制做成第 14 道门~~ **✅ 已完成（Round 183，见下）** | 第 14 道门 `_gate-claim-anchor.cjs` 已上线并登记进 `_gate-registry.cjs`；另两处（三点映射 / 图像七查）仍待标定 |
+| **2** | zotero-mcp / PDFMathTranslate 的红旗五查 | 补完五查再判是否整合（两者 star 高、与文献管理相关） |
+
+**⇒ Round 183：第 14 道门落地（本条同时更正上一轮的许可处置）**
+
+| 项 | 结果 |
+| --- | --- |
+| **许可更正** | 上一轮按「CC BY-NC ⇒ 只吸思想不搬文件」处置；**所有者 2026-10-12 明确本仓库为非商业用途** ⇒ 已**收录上游原件**到 `third_party/academic-research-skills/`（`claim_ref_alignment_audit_agent.md` 45,813 字节 + `LICENSE-CC-BY-NC-4.0.txt` + `CITATION.cff` + `NOTICE.md`）。**边界**：若转商用须移除该目录；**本仓库的机械实现是独立描述，仍为 MIT**。 |
+| **实现的脚本** | `_gate-claim-anchor.cjs`（Node，无依赖，约 260 行）—— 五类阻断（HIGH-1 fabricated / HIGH-2 anchorless / HIGH-3 claim-not-supported / HIGH-4 negative-constraint / HIGH-5 constraint-violation-uncited）+ 两类提示（uncited_assertion / claim_drift）+ 采样不变量 S-INV-1..4 + `NEEDS_READ` 人工清单 |
+| **输入契约** | `_refs/claim-anchor-format.md`（锚点表与预注册清单的字段、取值含义、能做与不能做） |
+| **负控（本项目纪律：修复前跑它是否会失败）** | `--selftest` **7/7 通过**：1 个干净件必须 0 HIGH（防误报）+ 6 个注入件分别命中 fabricated / anchorless / claim-not-supported×2 / negative-constraint / constraint-violation-uncited（防漏报） |
+| **在本项目真实稿子上的基线** | `13-英文投稿稿-v1.md`：**213 句 · 25 处引用暂不可核验 · 9 处无引用经验句**。**★ 这 25 处不是「伪造引用」，而是「尚无锚点表」** —— 报告里已带 `ANCHOR_REGISTRY_MISSING` 澄清（Round 183 实测补的，防误读） |
+| **登记** | `_gate-registry.cjs` 第 14 项，`args:['--selftest']`、`kind:'gate'`、消费方 `next_round + user` ⇒ **注册表每轮验证「检查器本身还能报警」，真实稿子另跑 `--draft`** |
+| **仍未做** | ①为 NASA 稿补一份锚点表（才能真正跑出语义判定）；②三点映射与图像七查两道候选门（需先在本项目数据上标定阈值） |
+
+> **⚠ 边界（如实记）**：**① 本节的判定全部来自子代理的只读调研 + 主控抽验**（许可与文件存在性由主控复核：ai4s/zLanqing/flonat 的 `LICENSE` 首行为 `MIT License`；Imbad0202 的 `LICENSE` 为 20 KB 的 CC 正文）。**② 三处落地内容本轮均未在本项目数据上实测** ⇒ 一律标注为「规格」，**验收项写的是「要有可复核的记录」，不是「已通过」**。**③ star 数缺失（Imbad0202）与 license 缺失（zotero-mcp / PDFMathTranslate / 全部 Gitee）已如实标注，未用估算补齐。**
+
+---
+
 ## ★★ 第三个外部来源：B 站「科研方法论」9 条内容（2026-10-11）
 
 > **为什么单列**：来源、形式、核对方式都与前两节不同。上两节是**同行 Agent 的建议**；本节是**用户指定的 9 条 B 站公开内容**（8 期视频 + 1 篇图文帖），用户的要求是**「精读、取其精华去其糟粕、融入已有方案」**。

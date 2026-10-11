@@ -1,13 +1,17 @@
 {
-  "generatedAt": "2026-10-09T04:29:06.031Z",
+  "generatedAt": "2026-10-11T19:16:59Z",
   "deliverables": [
     {
       "f": "README-从这里开始.md",
-      "size": 6246
+      "size": 6546
+    },
+    {
+      "f": "README-公开版.md",
+      "size": 7416
     },
     {
       "f": "README.md",
-      "size": 8005
+      "size": 8090
     },
     {
       "f": "一页速查.md",
@@ -19,7 +23,7 @@
     },
     {
       "f": "代写执行契约.md",
-      "size": 17359
+      "size": 19811
     },
     {
       "f": "反向检验报告.md",
@@ -31,7 +35,7 @@
     },
     {
       "f": "子方向与目标刊画像.md",
-      "size": 8455
+      "size": 29579
     },
     {
       "f": "实质变更清单.md",
@@ -43,11 +47,11 @@
     },
     {
       "f": "投稿前总检查表.md",
-      "size": 27878
+      "size": 41635
     },
     {
       "f": "无实验条件下的选题与创新形态.md",
-      "size": 10033
+      "size": 32208
     },
     {
       "f": "期刊投稿要求核实清单.md",
@@ -63,7 +67,7 @@
     },
     {
       "f": "科研论文写作方案-完整版.md",
-      "size": 996330
+      "size": 1126361
     },
     {
       "f": "第一周动作清单.md",
@@ -78,8 +82,8 @@
       "size": 2733
     }
   ],
-  "count": 19,
-  "totalBytes": 1270460,
+  "count": 20,
+  "totalBytes": 1467800,
   "verifiers": [
     "_assertions-digest.cjs",
     "_baseline-control.cjs",
@@ -104,5 +108,5 @@
   "pythonTools": [
     "_pdftext.py"
   ],
-  "note": "research/04b-取材台账.md 是过程记录；playbook/03-peer-adoptions.md 已接入成品第 4.7 部分"
+  "note": "research/04b-鍙栨潗鍙拌处.md 鏄繃绋嬭褰曪紱playbook/03-peer-adoptions.md 宸叉帴鍏ユ垚鍝佺 4.7 閮ㄥ垎"
 }
