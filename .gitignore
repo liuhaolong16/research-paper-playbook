@@ -1,0 +1,24 @@
+# 运行产物与临时文件
+_backup/
+.tmp/
+*.tmp
+*temp-*
+dsh-subprocess-*
+# 编辑器/系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+# 本地环境（不应入库）
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+# 大型素材（本仓库只放方法论与工具；视频/音频/抽帧不入库）
+_refs/
+*.mp4
+*.mp3
+*.wav
+*.zip
+*.7z
+*.exe

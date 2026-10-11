@@ -1,0 +1,72 @@
+{
+  "builtAt": "2026-10-11T17:34:41.431Z",
+  "total": 130,
+  "dims": [
+    {
+      "key": "01-topic-selection",
+      "file": "research/01-topic-selection.md",
+      "n": 9,
+      "hash": "9bce431a3d74ef0c"
+    },
+    {
+      "key": "02-framework",
+      "file": "research/02-framework.md",
+      "n": 13,
+      "hash": "501f2a5941f22b96"
+    },
+    {
+      "key": "03-structure",
+      "file": "research/03-structure.md",
+      "n": 16,
+      "hash": "c659170899187ede"
+    },
+    {
+      "key": "04-databases",
+      "file": "research/04-databases.md",
+      "n": 8,
+      "hash": "85a95e8156ca4d5d"
+    },
+    {
+      "key": "05-references",
+      "file": "research/05-references.md",
+      "n": 15,
+      "hash": "57fd9af31864d85f"
+    },
+    {
+      "key": "06-content",
+      "file": "research/06-content.md",
+      "n": 15,
+      "hash": "caede79f89af2f12"
+    },
+    {
+      "key": "07-abstract",
+      "file": "research/07-abstract.md",
+      "n": 14,
+      "hash": "a8433613a6996f41"
+    },
+    {
+      "key": "08-writing-style",
+      "file": "research/08-writing-style.md",
+      "n": 16,
+      "hash": "a9db674f559a9d0e"
+    },
+    {
+      "key": "09-dedup-and-ai-rate",
+      "file": "research/09-dedup-and-ai-rate.md",
+      "n": 9,
+      "hash": "93da889d89333749"
+    },
+    {
+      "key": "10-statistics",
+      "file": "research/10-statistics.md",
+      "n": 9,
+      "hash": "761cfcb7e137418e"
+    },
+    {
+      "key": "11-image-integrity",
+      "file": "research/11-image-integrity.md",
+      "n": 6,
+      "hash": "962fdb700c6bd085"
+    }
+  ]
+}
